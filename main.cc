@@ -66,7 +66,7 @@ int main() {
   avr::sei();
 
   // And now, we just sleep....
-  // The pin change interrupt will cause the chip towake up
+  // The pin change interrupt will cause the chip to wake up
   // and reset the watchdog. Afterwards we go right back to
   // sleep.
   while (1) {
