@@ -1,0 +1,3 @@
+[submodule "libavr--"]
+	path = libavr--
+	url = https://github.com/int2str/libavr--.git
