@@ -16,6 +16,8 @@
 #include <libavr--/asm.h>
 #include <libavr--/io.h>
 
+#include "device/attiny10.h"
+
 using namespace avr::io;
 
 // PCINT0_vect
@@ -26,52 +28,35 @@ extern "C" __attribute__((signal, used, externally_visible)) void __vector_2() {
   avr::wdr();
 }
 
-// Silly delay function. The time unit of d is pretty arbitrary here.
-inline void delay(volatile uint32_t d) {
-  while (--d) avr::nop();
-}
-
 int main() {
   // Clear pending watchdog flags
   RSTFLR = 0;
   avr::wdr();
 
   // Disable some peripherals for power savings
-  PRR = (1 << PRADC) | (1 << PRTIM0);
+  PRR = (1 << PRADC);
 
   // Enable watchdog; 4s timeout
   // Next two lines are a sequenced write operation
   CCP = CCP_UNLOCK_PROTECTED_REGISTERS;
   WDTCSR = (1 << WDE) | (1 << WDP3);
 
-  // Set PB2 as output; enable pull-up on PB1
-  DDRB = (1 << PB2);
-  PUEB = (1 << PB1);
+  DDRB = (1 << PB0);
+  PORTB = (1 << PB0);
 
-  // Disable power for some amount of time. This is
-  // the part that would reset the dependent MCU.
-  PORTB = (1 << PB2);
-  delay(10'000);
-  PORTB = 0;
+  TCCR0A = (1 << WGM02) | (1 << WGM00) | (1 << COM0A1);
+  TCCR0B = (1 << CS00);
 
-  // Set sleep mode power down
-  SMCR = (1 << SM1);
+  OCR0AH = 0;
+  OCR0AL = 0x48;
 
-  // Enable pin change interrupt
-  PCMSK = (1 << PCINT1);
-  PCICR = (1 << PCIE0);
+  CCP = CCP_UNLOCK_PROTECTED_REGISTERS;
+  CLKPSR = (1 << CLKPS1);
 
-  // Enable interrupts and reset watchdog one last time.
-  avr::wdr();
   avr::sei();
 
-  // And now, we just sleep....
-  // The pin change interrupt will cause the chip to wake up
-  // and reset the watchdog. Afterwards we go right back to
-  // sleep.
-  while (1) {
-    SMCR |= (1 << SE);  // Sleep enable
-    avr::sleep();
-    SMCR &= ~(1 << SE);  // Sleep disable
+  while (true) {
+    avr::wdr();
+    avr::nop();
   }
 }
